@@ -8,7 +8,7 @@ use mio::{Interest, Token};
 use mio::event::{Event, Events};
 use mio::Poll;
 
-const DATA1: &[u8] = b"Hello world!";
+const DATA: &[u8] = b"Hello world!";
 const ID1: Token = Token(0);
 
 #[allow(dead_code)]
@@ -36,7 +36,7 @@ where F: Fn(&Event) -> bool {
 }
 
 fn main() {
-    let mut poll = Poll::new().expect("unable to create Poll instance");
+    let mut poll = Poll::new().unwrap();
     let mut events = Events::with_capacity(16);
 
     let addr: SocketAddr = "127.0.0.1:0".parse().unwrap();
@@ -72,20 +72,18 @@ fn main() {
     expect_events(&mut poll, &mut events, |e| e.token() == ID1 && e.is_writable());
 
     let mut buf = [0; 16];
-    stream.write(DATA1).unwrap();
+    stream.write(DATA).unwrap();
     stream.flush().unwrap();
 
     expect_events(&mut poll, &mut events, |e| e.token() == ID1 && e.is_readable());
 
     stream.read(&mut buf).unwrap();
 
-    assert!(stream.take_error().unwrap().is_none());
-
-    // Program panics if this is commented, exits cleanly if it's here.
+    // Program panics on Windows if this is commented, exits cleanly if it's here.
     // assert_would_block(stream.read(&mut buf));
 
     // Check write, then read, but don't try another "would block" read before writing.
-    stream.write(DATA1).unwrap();
+    stream.write(DATA).unwrap();
     stream.flush().unwrap();
     expect_events(&mut poll, &mut events, |e| e.token() == ID1 && e.is_readable());
 
